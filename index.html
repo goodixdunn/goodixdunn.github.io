@@ -256,6 +256,140 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/23/csapp/chapter_10/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Dunn">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="See you again">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/07/23/csapp/chapter_10/" itemprop="url">系统级I/O</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Veröffentlicht am</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-07-23T16:26:33+08:00">
+                2017-07-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>所有的编程语言都提供了执行I/O的较高级别的工具。例如，ANSI C提供了标准的I/O库；C++提供重载的&lt;&lt;以及&gt;&gt;提供类似的功能。 在Unix系统中，是通过使用系统级的I/O来实现这些较高级别的I/O函数的，一般情况下，高级别的I/O工作良好，那为什么还需要学习系统级的I/O呢？</p>
+<ol>
+<li>了解系统级I/O有助于了解系统概念。在unix中，“一切皆文件”，了解了系统的I/O，可以帮助了解进程、文件</li>
+<li>标准的I/O也有不适用的范围，例如网络编程；</li>
+</ol>
+<h2 id="系统级函数接口"><a href="#系统级函数接口" class="headerlink" title="系统级函数接口"></a>系统级函数接口</h2><blockquote>
+<p><a href="http://man7.org/linux/man-pages/man2/open.2.html" target="_blank" rel="external">open</a>  <a href="http://man7.org/linux/man-pages/man2/read.2.html" target="_blank" rel="external">read</a>  <a href="http://man7.org/linux/man-pages/man2/write.2.html" target="_blank" rel="external">write</a>  <a href="http://man7.org/linux/man-pages/man2/close.2.html" target="_blank" rel="external">close</a> </p>
+</blockquote>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">open</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">int</span> flags)</span></span>;</div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">open</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *pathname, <span class="keyword">int</span> flags, <span class="keyword">mode_t</span> mode)</span></span>;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></div><div class="line"><span class="keyword">ssize_t</span> read(<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> count);</div><div class="line">	<span class="comment">/* 成功返回读取的字节数，EOF则为0；若出错则为-1 */</span></div><div class="line"><span class="keyword">ssize_t</span> write(<span class="keyword">int</span> fd, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> count);</div><div class="line">	<span class="comment">/* 成功返回写的字节数，若出错则为-1 */</span></div></pre></td></tr></table></figure>
+<p>read/write 若返回-1.则errno会被设置，其中，关于errno多线程的问题，后续需要在关注（是否是每个线程都有自己的errno？？）<br><strong><em>注意：</em></strong></p>
+<ol>
+<li>ssize_t 被定义为 int，而size_t被定义为 unsigned int；</li>
+<li>某些情况下可能会出现read/write传送的字节比要求的要少，原因可能为：<ul>
+<li>read时遇到EOF</li>
+<li>read从终端</li>
+<li>read/write网络套接字<br>实际上，除了EOF，若是在读取<strong>磁盘</strong>文件或者写<strong>磁盘</strong>文件时不会遇到不足值；<br>正式因为可能遇到不足值，因此想要编写robust的网络应用程序，就必须通过反复调用read/write来处理不足值，因此才有了接下来的RIO包</li>
+</ul>
+</li>
+</ol>
+<h2 id="RIO-robust-I-O"><a href="#RIO-robust-I-O" class="headerlink" title="RIO(robust I/O)"></a>RIO(robust I/O)</h2><p>该包主要应用于网络应用程序<br><strong>无缓冲的<em>输入输出</em>函数 </strong> ：对讲二进制数据读写到网络或者从网络读写二进制数据非常有用；能够处理不足值<br><strong>带缓冲的<em>输入</em>函数</strong> ：高效的从文件中读取文本行和二进制数据，而且是线程安全的，它可以在同一个文件描述符上交错的调用，例如，可以从描述符上读一些文本行，然后读取一些二进制数据，在接着读取一些文本行。为什么会有带缓冲的呢？加入我们要读取文本行，如果我们一个字节一个字节读取然后去判断是否是‘\n’，那每次都要陷入内核，那效率就太低了，解决方法就是增加内部缓冲区，具体实现见代码。<br>robustio.c<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"robustio.h"</span></span></div><div class="line"></div><div class="line"><span class="keyword">ssize_t</span> rio_read(<span class="keyword">int</span> fd, <span class="keyword">void</span> *usrbuf, <span class="keyword">size_t</span> count)</div><div class="line">&#123;</div><div class="line">    <span class="keyword">size_t</span> nleft = count;</div><div class="line">    <span class="keyword">ssize_t</span> nread = <span class="number">0</span>;</div><div class="line">    <span class="keyword">char</span> *bufp = usrbuf;</div><div class="line"></div><div class="line">    <span class="keyword">while</span> (nleft &gt; <span class="number">0</span>) &#123;</div><div class="line">        <span class="keyword">if</span> ((nread = read(fd, bufp, nleft)) &lt; <span class="number">0</span>) &#123;</div><div class="line">            <span class="keyword">if</span> (EINTR == errno) &#123;    <span class="comment">/* Interrupt by sig handler return */</span></div><div class="line">                nread = <span class="number">0</span>;           <span class="comment">/* and call read() again */</span></div><div class="line">            &#125; <span class="keyword">else</span> &#123;</div><div class="line">                <span class="keyword">return</span> <span class="number">-1</span>;           <span class="comment">/* errno set by read */</span></div><div class="line">            &#125;</div><div class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="number">0</span> == nread) &#123;</div><div class="line">            <span class="keyword">break</span>;</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            nleft -= nread;</div><div class="line">            bufp += nread;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> (count - nleft);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">ssize_t</span> rio_write(<span class="keyword">int</span> fd, <span class="keyword">void</span> *usrbuf, <span class="keyword">size_t</span> count)</div><div class="line">&#123;</div><div class="line">    <span class="keyword">size_t</span> nleft = count;</div><div class="line">    <span class="keyword">ssize_t</span> nwrite = <span class="number">0</span>;</div><div class="line">    <span class="keyword">char</span> *bufp = usrbuf;</div><div class="line"></div><div class="line">    <span class="keyword">while</span>(nleft &gt; <span class="number">0</span>) &#123;</div><div class="line">        <span class="keyword">if</span> ((nwrite = write(fd, bufp, nleft)) &lt;= <span class="number">0</span>) &#123;</div><div class="line">            <span class="keyword">if</span> (EINTR == errno) &#123;        <span class="comment">/* Interrupt by sig handler return */</span></div><div class="line">                nwrite = <span class="number">0</span>;              <span class="comment">/* and call write() again */</span></div><div class="line">            &#125; <span class="keyword">else</span> &#123;</div><div class="line">                <span class="keyword">return</span> <span class="number">-1</span>;               <span class="comment">/* errno set by read */</span></div><div class="line">            &#125;</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            nleft -= nwrite;</div><div class="line">            bufp += nwrite;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">return</span> count;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>这里注意一点，read 返回值有三种处理方法， 大于0，等于0，小于0，其中大于0为真真读取的字节个数，等于0说明遇到EOF，可以返回了，小于0，又要看是否是被信号中断了，若中断，则继续，否则返回-1；而write函数的返回值，若大于0，则返回实际写的字节数，小于等于0，则要看是否是被中断信号打断，若被打断，则继续写，否则返回-1<br>robustio.h<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _ROBUSTIO_H_</span></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> _ROBUSTIO_H_</span></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;     /* for read/write */</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;      /* for EINTR and errno */</span></span></div><div class="line"></div><div class="line"><span class="keyword">ssize_t</span> rio_read(<span class="keyword">int</span> fd, <span class="keyword">void</span> *usrbuf, <span class="keyword">size_t</span> count);</div><div class="line"><span class="keyword">ssize_t</span> rio_write(<span class="keyword">int</span> fd, <span class="keyword">void</span> *usrbuf, <span class="keyword">size_t</span> count);</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></div></pre></td></tr></table></figure></p>
+<p>test.c<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"robustio.h"</span></span></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">define</span> BUF_SIZE    4096</span></div><div class="line"><span class="keyword">static</span> <span class="keyword">char</span> bufp[BUF_SIZE + <span class="number">1</span>] = &#123; <span class="number">0</span> &#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> **argv)</span></span></div><div class="line">&#123;</div><div class="line">    <span class="keyword">char</span> *filename = <span class="string">"testfile"</span>;</div><div class="line">    <span class="keyword">int</span> fd = <span class="number">0</span>;</div><div class="line">    <span class="keyword">ssize_t</span> nread = <span class="number">0</span>;</div><div class="line">    <span class="keyword">ssize_t</span> nwrite = <span class="number">0</span>;</div><div class="line">    <span class="keyword">ssize_t</span> nseek = <span class="number">0</span>;</div><div class="line"></div><div class="line">    <span class="keyword">do</span> &#123;</div><div class="line">        fd = open(filename, O_RDWR | O_CREAT);</div><div class="line">        <span class="keyword">if</span> (fd &lt; <span class="number">0</span>) &#123;</div><div class="line">            <span class="built_in">printf</span>(<span class="string">"open [%s] file failed\n"</span>, filename);</div><div class="line">            <span class="keyword">break</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="built_in">printf</span>(<span class="string">"open [%s] file success\n"</span>, filename);</div><div class="line"></div><div class="line"><span class="comment">/* rio_write test */</span></div><div class="line">        nseek = lseek(fd, <span class="number">0</span>, SEEK_END);</div><div class="line">        nwrite = rio_write(fd, filename, <span class="keyword">sizeof</span>(filename));</div><div class="line"></div><div class="line"><span class="comment">/* rio_read test */</span></div><div class="line">        nseek = lseek(fd, <span class="number">0</span>, SEEK_SET);</div><div class="line">        nread = rio_read(fd, bufp, BUF_SIZE);</div><div class="line">        <span class="built_in">printf</span>(<span class="string">"nread=%zd\n"</span>, nread);</div><div class="line">        <span class="keyword">if</span> (nread &gt; <span class="number">0</span>) &#123;</div><div class="line">            bufp[nread] = <span class="string">'\0'</span>;</div><div class="line">            <span class="built_in">printf</span>(<span class="string">"%s\n"</span>, bufp);</div><div class="line">        &#125;</div><div class="line">        close(fd);</div><div class="line">    &#125; <span class="keyword">while</span> (<span class="number">0</span>);</div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>在命令行运行 gcc -o test robustio.c test.c 就会生成 test，然后执行 ./test<br>这个测试程序就是将字符串testfile写入到testfile文件中，并读取打印出来</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/23/diary/daily_note/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -287,7 +421,7 @@
               
                 <span class="post-meta-item-text">Veröffentlicht am</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-07-23T15:17:14+08:00">
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-07-23T16:10:05+08:00">
                 2017-07-23
               </time>
             
@@ -352,7 +486,8 @@
 <li>右键终端<br> sudo apt-get install nautilus-open-terminal</li>
 <li>vim<br> sudo apt-get install vim</li>
 <li>ag<br> sudo apt-get install silversearcher-ag</li>
-<li>命令行滚动限制取消以及透明背景<h2 id="知识汇总"><a href="#知识汇总" class="headerlink" title="知识汇总"></a>知识汇总</h2></li>
+<li>命令行滚动限制取消以及透明背景</li>
+<li>默认sublime打开文件：sudo  vi /etc/gnome/defaults.list ，将gedit都替换为sublime_text,:%s/gedit/sublime_text/g<h2 id="知识汇总"><a href="#知识汇总" class="headerlink" title="知识汇总"></a>知识汇总</h2></li>
 </ol>
 <ul>
 <li>C/C++/JAVA</li>
@@ -364,118 +499,6 @@
 <li>从github  clone源码，获取<a href="https://github.com/libevent/libevent" target="_blank" rel="external">安装方法</a></li>
 <li>运行 autogen.sh，需要先安装：<br> sudo apt-get install autotools-dev<br> sudo apt-get install automake<br> sudo apt-get install autogen autoconf libtool<br>3.</li>
 </ol>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/23/csapp/chapter_10/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Dunn">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="See you again">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/07/23/csapp/chapter_10/" itemprop="url">Unbenannt</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Veröffentlicht am</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-07-23T14:45:54+08:00">
-                2017-07-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>#this is a test</p>
 
           
         
